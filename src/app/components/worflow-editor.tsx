@@ -144,41 +144,79 @@ export default function WorkflowEditor() {
   }, []);
 
   // ----------------------- SYNCHRONISATION DES CHAMPS -----------------------
-  const syncFieldDisplay = useCallback((blockId: string) => {
+  const syncFieldDisplay = useCallback((blockId: string, forceUpdate = false) => {
     const block = document.getElementById(blockId);
     if (!block || !blockFields[blockId]) return;
 
     console.log('Syncing fields for block:', blockId, blockFields[blockId]); // Debug
 
+    // Trier les champs par ordre pour maintenir la position correcte
+    const sortedFields = [...blockFields[blockId]].sort((a, b) => a.order - b.order);
+    console.log('Sorted fields by order:', sortedFields); // Debug
+
     // Mettre à jour tous les champs visibles dans le bloc
     const fieldItems = block.querySelectorAll('.field-item');
     console.log('Found field items:', fieldItems.length); // Debug
     
-    fieldItems.forEach((fieldItem, index) => {
-      if (blockFields[blockId][index]) {
-        const field = blockFields[blockId][index];
-        fieldItem.textContent = `• ${field.label}`;
-        console.log(`Updated field display: ${field.label}`); // Debug
-      } else {
-        console.log(`No field data for index ${index}`); // Debug
-      }
-    });
+    // Vérifier si la synchronisation est nécessaire
+    let needsUpdate = forceUpdate;
+    if (!needsUpdate) {
+      fieldItems.forEach((fieldItem, index) => {
+        const currentText = fieldItem.textContent;
+        const expectedText = sortedFields[index] ? `• ${sortedFields[index].label}` : '';
+        if (currentText !== expectedText) {
+          needsUpdate = true;
+        }
+      });
+    }
+    
+    if (needsUpdate) {
+      console.log('Updating field display...'); // Debug
+      // Mettre à jour chaque champ avec sa position correcte
+      fieldItems.forEach((fieldItem, index) => {
+        if (sortedFields[index]) {
+          const field = sortedFields[index];
+          fieldItem.textContent = `• ${field.label}`;
+          fieldItem.setAttribute('data-field', field.name);
+          console.log(`Updated field display: ${field.label} at position ${index}`); // Debug
+        } else {
+          console.log(`No field data for index ${index}`); // Debug
+        }
+      });
+    } else {
+      console.log('No update needed for field display'); // Debug
+    }
   }, [blockFields]);
 
   // ----------------------- MISE À JOUR DE L'AFFICHAGE DES CHAMPS -----------------------
   useEffect(() => {
     // Synchroniser l'affichage des champs quand blockFields change
-    Object.keys(blockFields).forEach(blockId => {
-      syncFieldDisplay(blockId);
-    });
+    // Utiliser un délai pour éviter les conflits de synchronisation
+    const timeoutId = setTimeout(() => {
+      Object.keys(blockFields).forEach(blockId => {
+        syncFieldDisplay(blockId, true); // Forcer la mise à jour
+      });
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [blockFields, syncFieldDisplay]);
 
   // ----------------------- GESTION DES CHAMPS -----------------------
   const handleFieldClick = useCallback((blockId: string, fieldName: string) => {
     console.log('handleFieldClick called:', { blockId, fieldName }); // Debug
-    console.log('Setting editingField to:', { blockId, fieldName }); // Debug
-    setEditingField({ blockId, fieldName });
-  }, []);
+    
+    // Trouver le champ correspondant dans blockFields
+    const blockFieldsData = blockFields[blockId] || [];
+    const field = blockFieldsData.find(f => f.name === fieldName || f.label === fieldName);
+    
+    if (field) {
+      console.log('Found field:', field); // Debug
+      setEditingField({ blockId, fieldName: field.name });
+    } else {
+      console.log('Field not found, using fieldName as is:', fieldName); // Debug
+      setEditingField({ blockId, fieldName });
+    }
+  }, [blockFields]);
 
   const handleFieldSave = useCallback((blockId: string, fieldName: string, value: string) => {
     setFieldData(prev => ({
@@ -241,8 +279,45 @@ export default function WorkflowEditor() {
       }
       
       if (newFields[fieldIndex]) {
-        newFields[fieldIndex] = { ...newFields[fieldIndex], [property]: value };
+        const updatedField = { ...newFields[fieldIndex], [property]: value };
+        
+        // Si on change l'ordre, s'assurer qu'il n'y a pas de conflit
+        if (property === 'order') {
+          const newOrder = parseInt(value) || 0;
+          const oldOrder = newFields[fieldIndex].order;
+          
+          // Vérifier si cet ordre est déjà utilisé par un autre champ
+          const existingFieldWithOrder = newFields.find((field, index) => 
+            index !== fieldIndex && field.order === newOrder
+          );
+          
+          if (existingFieldWithOrder) {
+            // Échanger les ordres si c'est un échange direct
+            if (existingFieldWithOrder.order === oldOrder) {
+              // Échange direct entre deux champs
+              const existingIndex = newFields.findIndex(field => field === existingFieldWithOrder);
+              newFields[existingIndex] = { ...existingFieldWithOrder, order: oldOrder };
+            } else {
+              // Décaler tous les champs entre l'ancien et le nouveau ordre
+              newFields.forEach((field, index) => {
+                if (index !== fieldIndex) {
+                  if (oldOrder < newOrder && field.order > oldOrder && field.order <= newOrder) {
+                    newFields[index] = { ...field, order: field.order - 1 };
+                  } else if (oldOrder > newOrder && field.order >= newOrder && field.order < oldOrder) {
+                    newFields[index] = { ...field, order: field.order + 1 };
+                  }
+                }
+              });
+            }
+          }
+        }
+        
+        newFields[fieldIndex] = updatedField;
         console.log(`Updated field:`, newFields[fieldIndex]); // Debug
+        
+        // Trier les champs par ordre pour maintenir la cohérence
+        newFields.sort((a, b) => a.order - b.order);
+        
         return { ...prev, [blockId]: newFields };
       }
       return prev;
@@ -659,13 +734,15 @@ export default function WorkflowEditor() {
       fieldIndex = 0;
     } else if (!currentField) {
       console.log('No fields available, creating default'); // Debug
+      // Déterminer l'ordre suivant disponible
+      const maxOrder = blockFieldsData.length > 0 ? Math.max(...blockFieldsData.map(f => f.order)) : -1;
       currentField = {
         name: editingField.fieldName.toLowerCase().replace(/\s+/g, '_'),
         label: editingField.fieldName,
         field_type: "text",
         is_required: false,
         is_multiple: false,
-        order: 0,
+        order: maxOrder + 1,
         depends_on: ""
       };
       fieldIndex = -1; // Indique que c'est un nouveau champ
@@ -719,13 +796,17 @@ export default function WorkflowEditor() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ordre d'affichage</label>
               <input
                 type="number"
                 defaultValue={currentField.order}
+                min="0"
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                 onChange={(e) => updateFieldProperty(editingField.blockId, fieldIndex, 'order', parseInt(e.target.value) || 0)}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Position dans la liste (0 = premier, 1 = deuxième, etc.)
+              </p>
             </div>
             
             <div>
@@ -762,6 +843,27 @@ export default function WorkflowEditor() {
             </label>
           </div>
           
+          {/* Aperçu de l'ordre des champs */}
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Ordre actuel des champs:</h4>
+            <div className="space-y-1">
+              {blockFieldsData
+                .sort((a, b) => a.order - b.order)
+                .map((field, index) => (
+                  <div 
+                    key={field.name} 
+                    className={`text-xs p-2 rounded ${
+                      field.name === currentField.name 
+                        ? 'bg-blue-100 border border-blue-300' 
+                        : 'bg-white border border-gray-200'
+                    }`}
+                  >
+                    {index + 1}. {field.label} {field.name === currentField.name && '(en cours d\'édition)'}
+                  </div>
+                ))}
+            </div>
+          </div>
+          
           <div className="flex justify-end space-x-2 mt-6">
             <button
               onClick={handleFieldCancel}
@@ -771,8 +873,10 @@ export default function WorkflowEditor() {
             </button>
             <button
               onClick={() => {
-                // Synchroniser l'affichage du bloc
-                syncFieldDisplay(editingField.blockId);
+                // Synchroniser l'affichage du bloc avec un délai pour s'assurer que les changements sont appliqués
+                setTimeout(() => {
+                  syncFieldDisplay(editingField.blockId, true);
+                }, 50);
                 handleFieldCancel();
               }}
               className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"

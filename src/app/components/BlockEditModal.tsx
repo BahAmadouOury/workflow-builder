@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FieldDefinition, EditingBlock } from './types';
-import { Edit, Trash2, X } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 
 interface BlockEditModalProps {
   showModal: boolean;
@@ -41,26 +48,16 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
     }
   }, [editingFieldIndex, blockFieldsData]);
 
-  if (!showModal || !editingBlock) return null;
+  if (!editingBlock) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-end z-50">
-      <div className="bg-white shadow-xl w-1/2 h-full overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-semibold">Configuration du bloc: {editingBlock.blockType}</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
+    <Sheet open={showModal} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="w-1/2 sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>{editingBlock.blockType}</SheetTitle>
+        </SheetHeader>
         
-        {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ height: 'calc(100vh - 120px)', maxHeight: '80vh' }}>
+        <div className="flex-1 overflow-y-auto py-6">
           <div className="space-y-6">
             {/* Configuration générale du bloc */}
             <div className="border border-gray-200 rounded-lg p-4">
@@ -298,25 +295,24 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
               </>
             )}
 
-            {/* Bouton pour enregistrer et fermer la modale - toujours visible */}
-            <div className="mt-6 flex justify-end mb-8">
-              <button
-                onClick={() => {
-                  // Synchroniser l'affichage du bloc
-                  setTimeout(() => syncFieldDisplay(editingBlock.blockId, true), 50);
-                  // Fermer la modale
-                  onClose();
-                }}
-                className="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-              >
-                Enregistrer
-              </button>
-            </div>
-
           </div>
         </div>
-      </div>
-    </div>
+        
+        <SheetFooter className="flex justify-end">
+          <button
+            onClick={() => {
+              // Synchroniser l'affichage du bloc
+              setTimeout(() => syncFieldDisplay(editingBlock.blockId, true), 50);
+              // Fermer la modale
+              onClose();
+            }}
+            className="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+          >
+            Enregistrer
+          </button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };
 

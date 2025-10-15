@@ -17,6 +17,9 @@ export default function WorkflowEditor() {
   const jsPlumbInstanceRef = useRef<BrowserJsPlumbInstance | null>(null);
   const blockCounter = useRef(2);
   const [editingField, setEditingField] = useState<{blockId: string, fieldName: string} | null>(null);
+  const [editingBlock, setEditingBlock] = useState<{blockId: string, blockType: string} | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
   const [fieldData, setFieldData] = useState<Record<string, Record<string, string>>>({});
   const [blockFields, setBlockFields] = useState<Record<string, FieldDefinition[]>>({});
 
@@ -46,12 +49,15 @@ export default function WorkflowEditor() {
       container: containerRef.current,
       paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
       endpointStyle: { fill: "#4A90E2", radius: 4 },
-      connector: { type: "Bezier", options: { curviness: 50 } },
+      connector: { type: "StateMachine", options: {} },
     });
 
     jsPlumbInstanceRef.current = instance;
 
-    // Pas de blocs par défaut - l'utilisateur peut créer ses propres blocs
+    // Créer automatiquement le workflow d'identité au premier rendu
+    setTimeout(() => {
+      createIdentityWorkflow();
+    }, 100);
 
     return () => instance.destroy();
   }, []);
@@ -90,35 +96,16 @@ export default function WorkflowEditor() {
                          blockElement.querySelector('div:first-child')?.textContent || 
                          blockElement.textContent;
         
-        // Vérifier si c'est un bloc de collecte (ne pas permettre l'édition)
+        console.log('Block double-clicked:', { blockId, blockType }); // Debug
+        
+        // Vérifier si c'est un bloc de collecte (ID Collection ou Passport Collection)
         if (blockType === "ID Collection" || blockType === "Passport Collection") {
-          return;
+          // Ouvrir la modale de bloc
+          setEditingBlock({ blockId, blockType });
+          setShowBlockModal(true);
+        } else {
+          console.log('Block type not supported for field editing:', blockType);
         }
-        
-        // Déterminer si c'est l'en-tête ou le contenu
-        const isHeader = target.closest('div:first-child') !== null;
-        const editType = isHeader ? 'header' : 'content';
-        
-        console.log('Block double-clicked:', { blockId, blockType, editType }); // Debug
-        
-        // Rendre l'élément éditable directement
-        setTimeout(() => {
-          const element = editType === 'header' ? 
-            blockElement.querySelector('div:first-child') : 
-            blockElement.querySelector('div:last-child');
-          
-          if (element) {
-            (element as HTMLElement).contentEditable = 'true';
-            (element as HTMLElement).focus();
-            
-            // Sélectionner tout le texte
-            const range = document.createRange();
-            range.selectNodeContents(element);
-            const selection = window.getSelection();
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-          }
-        }, 10);
       }
     };
 
@@ -161,7 +148,7 @@ export default function WorkflowEditor() {
     // Vérifier si la synchronisation est nécessaire
     let needsUpdate = forceUpdate;
     if (!needsUpdate) {
-      fieldItems.forEach((fieldItem, index) => {
+    fieldItems.forEach((fieldItem, index) => {
         const currentText = fieldItem.textContent;
         const expectedText = sortedFields[index] ? `• ${sortedFields[index].label}` : '';
         if (currentText !== expectedText) {
@@ -176,13 +163,13 @@ export default function WorkflowEditor() {
       fieldItems.forEach((fieldItem, index) => {
         if (sortedFields[index]) {
           const field = sortedFields[index];
-          fieldItem.textContent = `• ${field.label}`;
+        fieldItem.textContent = `• ${field.label}`;
           fieldItem.setAttribute('data-field', field.name);
           console.log(`Updated field display: ${field.label} at position ${index}`); // Debug
-        } else {
-          console.log(`No field data for index ${index}`); // Debug
-        }
-      });
+      } else {
+        console.log(`No field data for index ${index}`); // Debug
+      }
+    });
     } else {
       console.log('No update needed for field display'); // Debug
     }
@@ -193,9 +180,9 @@ export default function WorkflowEditor() {
     // Synchroniser l'affichage des champs quand blockFields change
     // Utiliser un délai pour éviter les conflits de synchronisation
     const timeoutId = setTimeout(() => {
-      Object.keys(blockFields).forEach(blockId => {
+    Object.keys(blockFields).forEach(blockId => {
         syncFieldDisplay(blockId, true); // Forcer la mise à jour
-      });
+    });
     }, 100);
     
     return () => clearTimeout(timeoutId);
@@ -205,18 +192,19 @@ export default function WorkflowEditor() {
   const handleFieldClick = useCallback((blockId: string, fieldName: string) => {
     console.log('handleFieldClick called:', { blockId, fieldName }); // Debug
     
-    // Trouver le champ correspondant dans blockFields
-    const blockFieldsData = blockFields[blockId] || [];
-    const field = blockFieldsData.find(f => f.name === fieldName || f.label === fieldName);
+    // Trouver le bloc parent
+    const blockElement = document.getElementById(blockId);
+    const blockType = blockElement?.querySelector('div:first-child')?.textContent || 'Unknown';
     
-    if (field) {
-      console.log('Found field:', field); // Debug
-      setEditingField({ blockId, fieldName: field.name });
+    // Vérifier si c'est un bloc de collecte (ID Collection ou Passport Collection)
+    if (blockType === "ID Collection" || blockType === "Passport Collection") {
+      // Ouvrir la modale de bloc avec tous les champs
+      setEditingBlock({ blockId, blockType });
+      setShowBlockModal(true);
     } else {
-      console.log('Field not found, using fieldName as is:', fieldName); // Debug
-      setEditingField({ blockId, fieldName });
+      console.log('Block type not supported for field editing:', blockType);
     }
-  }, [blockFields]);
+  }, []);
 
   const handleFieldSave = useCallback((blockId: string, fieldName: string, value: string) => {
     setFieldData(prev => ({
@@ -249,6 +237,15 @@ export default function WorkflowEditor() {
 
   const handleFieldCancel = useCallback(() => {
     setEditingField(null);
+    setEditingBlock(null);
+    setShowBlockModal(false);
+    setEditingFieldIndex(null);
+  }, []);
+
+  const handleBlockModalClose = useCallback(() => {
+    setShowBlockModal(false);
+    setEditingBlock(null);
+    setEditingFieldIndex(null);
   }, []);
 
   const getFieldValue = useCallback((blockId: string, fieldName: string): string => {
@@ -416,30 +413,26 @@ export default function WorkflowEditor() {
     const container = containerRef.current;
     const instance = jsPlumbInstanceRef.current;
 
-    // Positions pour organiser le workflow
+    // Positions pour organiser le workflow avec bloc conditionnel
     const positions = {
-      start: { top: 50, left: 50 },
-      choice: { top: 150, left: 250 },
-      idCollection: { top: 250, left: 80 },
-      passportCollection: { top: 250, left: 380 },
-      confirmation: { top: 350, left: 250 },
-      verification: { top: 450, left: 250 },
-      success: { top: 550, left: 150 },
-      failed: { top: 550, left: 350 },
-      end: { top: 650, left: 250 }
+      choice: { top: 200, left: 50 },
+      idCollection: { top: 100, left: 300 },
+      passportCollection: { top: 300, left: 300 },
+      confirmation: { top: 200, left: 550 },
+      verification: { top: 200, left: 750 },
+      success: { top: 100, left: 950 },
+      failed: { top: 300, left: 950 }
     };
 
     // Créer les blocs du workflow
     const blocks = [
-      { id: "identity-start", type: "Start", pos: positions.start },
       { id: "identity-choice", type: "Identity Choice", pos: positions.choice },
       { id: "id-collection", type: "ID Collection", pos: positions.idCollection },
       { id: "passport-collection", type: "Passport Collection", pos: positions.passportCollection },
       { id: "confirmation", type: "Information Confirmation", pos: positions.confirmation },
       { id: "verification", type: "Identity Verification", pos: positions.verification },
       { id: "success", type: "Verification Success", pos: positions.success },
-      { id: "failed", type: "Verification Failed", pos: positions.failed },
-      { id: "identity-end", type: "End", pos: positions.end }
+      { id: "failed", type: "Verification Failed", pos: positions.failed }
     ];
 
     // Créer chaque bloc
@@ -474,11 +467,7 @@ export default function WorkflowEditor() {
             body.innerHTML = `
               <div class="text-center">
                 <div class="font-semibold mb-1">Collecter:</div>
-                <div class="text-xs space-y-1">
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Nom">• Nom</div>
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Prénom">• Prénom</div>
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Numéro ID">• Numéro ID</div>
-                </div>
+                <div class="text-xs text-gray-500">Double-clique pour configurer</div>
               </div>
             `;
             break;
@@ -486,11 +475,7 @@ export default function WorkflowEditor() {
             body.innerHTML = `
               <div class="text-center">
                 <div class="font-semibold mb-1">Collecter:</div>
-                <div class="text-xs space-y-1">
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Nom">• Nom</div>
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Prénom">• Prénom</div>
-                  <div class="field-item cursor-pointer hover:bg-gray-100 p-1 rounded" data-field="Numéro Passeport">• Numéro Passeport</div>
-                </div>
+                <div class="text-xs text-gray-500">Double-clique pour configurer</div>
               </div>
             `;
             break;
@@ -522,9 +507,8 @@ export default function WorkflowEditor() {
       addEndpoints(instance, element);
     });
 
-    // Créer les connexions
+    // Créer les connexions avec des ancres spécifiques pour éviter de traverser les blocs
     setTimeout(() => {
-      const startEl = document.getElementById("identity-start");
       const choiceEl = document.getElementById("identity-choice");
       const idCollectionEl = document.getElementById("id-collection");
       const passportCollectionEl = document.getElementById("passport-collection");
@@ -532,18 +516,64 @@ export default function WorkflowEditor() {
       const verificationEl = document.getElementById("verification");
       const successEl = document.getElementById("success");
       const failedEl = document.getElementById("failed");
-      const endEl = document.getElementById("identity-end");
 
-      if (startEl && choiceEl) instance.connect({ source: startEl, target: choiceEl });
-      if (choiceEl && idCollectionEl) instance.connect({ source: choiceEl, target: idCollectionEl });
-      if (choiceEl && passportCollectionEl) instance.connect({ source: choiceEl, target: passportCollectionEl });
-      if (idCollectionEl && confirmationEl) instance.connect({ source: idCollectionEl, target: confirmationEl });
-      if (passportCollectionEl && confirmationEl) instance.connect({ source: passportCollectionEl, target: confirmationEl });
-      if (confirmationEl && verificationEl) instance.connect({ source: confirmationEl, target: verificationEl });
-      if (verificationEl && successEl) instance.connect({ source: verificationEl, target: successEl });
-      if (verificationEl && failedEl) instance.connect({ source: verificationEl, target: failedEl });
-      if (successEl && endEl) instance.connect({ source: successEl, target: endEl });
-      if (failedEl && endEl) instance.connect({ source: failedEl, target: endEl });
+      // Connexions avec ancres spécifiques pour éviter de traverser les blocs
+      // Identity Choice est un bloc conditionnel avec deux sorties du même point
+      if (choiceEl && idCollectionEl) instance.connect({ 
+        source: choiceEl, 
+        target: idCollectionEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      if (choiceEl && passportCollectionEl) instance.connect({ 
+        source: choiceEl, 
+        target: passportCollectionEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      
+      // Les deux chemins convergent vers la confirmation
+      if (idCollectionEl && confirmationEl) instance.connect({ 
+        source: idCollectionEl, 
+        target: confirmationEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      if (passportCollectionEl && confirmationEl) instance.connect({ 
+        source: passportCollectionEl, 
+        target: confirmationEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      
+      // Suite du workflow
+      if (confirmationEl && verificationEl) instance.connect({ 
+        source: confirmationEl, 
+        target: verificationEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      
+      // Vérification avec deux résultats du même point
+      if (verificationEl && successEl) instance.connect({ 
+        source: verificationEl, 
+        target: successEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
+      if (verificationEl && failedEl) instance.connect({ 
+        source: verificationEl, 
+        target: failedEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 }
+      });
     }, 100);
 
     // Initialiser les champs pour les blocs de collecte du workflow d'identité
@@ -705,6 +735,190 @@ export default function WorkflowEditor() {
  
   // ----------------------- CRÉATION AUTOMATIQUE DE CHAMPS -----------------------
   // Supprimé pour simplifier - le modal créera les champs à la volée
+
+  // ----------------------- MODAL D'ÉDITION DES BLOCS -----------------------
+  const renderBlockEditModal = () => {
+    if (!showBlockModal || !editingBlock) return null;
+
+    const blockFieldsData = blockFields[editingBlock.blockId] || [];
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-end z-50">
+        <div className="bg-white shadow-xl w-1/2 h-full overflow-hidden">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold">Configuration du bloc: {editingBlock.blockType}</h3>
+              <button
+                onClick={handleBlockModalClose}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6 overflow-y-auto h-full">
+            <div className="space-y-6">
+              {/* Liste des champs existants */}
+              {blockFieldsData.length > 0 ? (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-700">Champs configurés:</h4>
+                  {blockFieldsData
+                    .sort((a, b) => a.order - b.order)
+                    .map((field, index) => (
+                      <div key={field.name} className="border border-gray-200 rounded-lg p-4">
+                        {editingFieldIndex === index ? (
+                          // Mode édition
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nom du champ</label>
+                                <input
+                                  type="text"
+                                  defaultValue={field.name}
+                                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'name', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Label affiché</label>
+                                <input
+                                  type="text"
+                                  defaultValue={field.label}
+                                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'label', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Type de champ</label>
+                                <select
+                                  defaultValue={field.field_type}
+                                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'field_type', e.target.value)}
+                                >
+                                  <option value="text">Texte</option>
+                                  <option value="number">Nombre</option>
+                                  <option value="email">Email</option>
+                                  <option value="date">Date</option>
+                                  <option value="select">Sélection</option>
+                                  <option value="checkbox">Case à cocher</option>
+                                  <option value="textarea">Zone de texte</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
+                                <input
+                                  type="number"
+                                  defaultValue={field.order}
+                                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'order', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="flex space-x-4">
+                              <label className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={field.is_required}
+                                  className="mr-2"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'is_required', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Requis</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={field.is_multiple}
+                                  className="mr-2"
+                                  onChange={(e) => updateFieldProperty(editingBlock.blockId, index, 'is_multiple', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Multiple</span>
+                              </label>
+                            </div>
+                            
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                onClick={() => setEditingFieldIndex(null)}
+                                className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingFieldIndex(null);
+                                  setTimeout(() => syncFieldDisplay(editingBlock.blockId, true), 50);
+                                }}
+                                className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                              >
+                                Sauvegarder
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // Mode affichage
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h5 className="font-medium text-gray-800">{field.label}</h5>
+                                <p className="text-xs text-gray-500">Type: {field.field_type} | Ordre: {field.order}</p>
+                              </div>
+                              <button
+                                onClick={() => setEditingFieldIndex(index)}
+                                className="text-blue-500 hover:text-blue-700 text-sm"
+                              >
+                                Éditer
+                              </button>
+                            </div>
+                            
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <div>Requis: {field.is_required ? 'Oui' : 'Non'}</div>
+                              <div>Multiple: {field.is_multiple ? 'Oui' : 'Non'}</div>
+                              {field.depends_on && <div>Dépend de: {field.depends_on}</div>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <p>Aucun champ configuré pour ce bloc</p>
+                </div>
+              )}
+              
+              {/* Bouton pour ajouter un nouveau champ */}
+              <div className="border-t border-gray-200 pt-4">
+                <button
+                  onClick={() => {
+                    const newField: FieldDefinition = {
+                      name: `nouveau_champ_${Date.now()}`,
+                      label: "Nouveau Champ",
+                      field_type: "text",
+                      is_required: false,
+                      is_multiple: false,
+                      order: blockFieldsData.length,
+                      depends_on: ""
+                    };
+                    
+                    setBlockFields(prev => ({
+                      ...prev,
+                      [editingBlock.blockId]: [...(prev[editingBlock.blockId] || []), newField]
+                    }));
+                  }}
+                  className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700"
+                >
+                  + Ajouter un nouveau champ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // ----------------------- MODAL D'ÉDITION DES CHAMPS -----------------------
   const renderFieldEditModal = () => {
@@ -903,27 +1117,9 @@ export default function WorkflowEditor() {
           >
             💾 Exporter Workflow
           </button>
-          <label className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-1 rounded text-center cursor-pointer">
-            📂 Importer Workflow
-            <input
-              type="file"
-              accept="application/json"
-            //   onChange={importWorkflow}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={createIdentityWorkflow}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold py-1 rounded"
-          >
-            🆔 Créer Workflow Identité
-          </button>
         </div>
 
-        {[{ label: "Début / Fin", blocks: ["Start", "End"] },
-          { label: "Actions", blocks: ["Task"] },
-          { label: "Conditions", blocks: ["Condition (IF)", "Switch / Case"] },
-          { label: "Entrées / Sorties", blocks: ["Input", "Output"] }
+        {[{ label: "Actions", blocks: ["Identity Choice", "ID Collection", "Passport Collection", "Information Confirmation", "Identity Verification", "Verification Success", "Verification Failed"] }
         ].map((group) => (
           <div key={group.label}>
             <h4 className="font-medium text-sm mb-1 text-gray-700">{group.label}</h4>
@@ -950,6 +1146,9 @@ export default function WorkflowEditor() {
       >
         {/* Zone vide - l'utilisateur peut glisser-déposer des blocs depuis le menu latéral */}
       </div>
+      
+      {/* MODAL D'ÉDITION DES BLOCS */}
+      {renderBlockEditModal()}
       
       {/* MODAL D'ÉDITION DES CHAMPS */}
       {renderFieldEditModal()}

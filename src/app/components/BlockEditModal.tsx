@@ -57,59 +57,8 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
           <SheetTitle>{editingBlock.blockType}</SheetTitle>
         </SheetHeader>
         
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 overflow-y-auto py-6 px-6">
           <div className="space-y-6">
-            {/* Configuration générale du bloc */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-4">Configuration du bloc</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre du bloc</label>
-                  <input
-                    type="text"
-                    defaultValue={editingBlock.blockType}
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                    onChange={(e) => {
-                      // Mettre à jour le titre dans le DOM
-                      const blockElement = document.getElementById(editingBlock.blockId);
-                      if (blockElement) {
-                        const headerElement = blockElement.querySelector('div:first-child');
-                        if (headerElement) {
-                          headerElement.textContent = e.target.value;
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contenu du bloc</label>
-                  <input
-                    type="text"
-                    defaultValue={(() => {
-                      const blockElement = document.getElementById(editingBlock.blockId);
-                      const bodyElement = blockElement?.querySelector('div:last-child');
-                      return bodyElement?.textContent?.trim() || '';
-                    })()}
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                    onChange={(e) => {
-                      // Mettre à jour le contenu dans le DOM
-                      const blockElement = document.getElementById(editingBlock.blockId);
-                      if (blockElement) {
-                        const bodyElement = blockElement.querySelector('div:last-child');
-                        if (bodyElement) {
-                          bodyElement.textContent = e.target.value;
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-              
-            </div>
-
-
-
-
             {/* Liste des champs existants - seulement pour les blocs de collecte */}
             {isCollectionBlock && (
               <>
@@ -298,7 +247,7 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
           </div>
         </div>
         
-        <SheetFooter className="flex justify-end">
+        <SheetFooter className="flex justify-end px-6">
           <button
             onClick={() => {
               // Synchroniser l'affichage du bloc
@@ -315,4 +264,7 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
     </Sheet>
   );
 };
+
+
+
 

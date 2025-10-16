@@ -13,15 +13,19 @@ export const useFieldManagement = () => {
     const blockElement = document.getElementById(blockId);
     const blockType = blockElement?.querySelector('div:first-child')?.textContent || 'Unknown';
     
-    // Ouvrir la modale pour tous les types de blocs
-    setEditingBlock({ blockId, blockType });
-    setShowBlockModal(true);
+    // Ouvrir la modale seulement pour les blocs de collecte
+    if (blockType === "ID Collection" || blockType === "Passport Collection") {
+      setEditingBlock({ blockId, blockType });
+      setShowBlockModal(true);
+    }
   }, []);
 
   const handleBlockDoubleClick = useCallback((blockId: string, blockType: string) => {
-    // Ouvrir la modale pour tous les types de blocs
-    setEditingBlock({ blockId, blockType });
-    setShowBlockModal(true);
+    // Ouvrir la modale seulement pour les blocs de collecte
+    if (blockType === "ID Collection" || blockType === "Passport Collection") {
+      setEditingBlock({ blockId, blockType });
+      setShowBlockModal(true);
+    }
   }, []);
 
   const handleFieldCancel = useCallback(() => {

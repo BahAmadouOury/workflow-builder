@@ -109,7 +109,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       newBlock.className = `${colorClass} absolute w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold border border-black cursor-move`;
       newBlock.textContent = type;
     } else {
-      newBlock.className = "absolute w-44 h-28 bg-white border border-gray-400 rounded-lg shadow-md flex flex-col overflow-hidden cursor-move";
+      newBlock.className = "absolute w-32 h-20 bg-white border border-gray-400 rounded-lg shadow-md flex flex-col overflow-hidden cursor-move";
       const header = document.createElement("div");
       header.className = `${colorClass} text-white text-xs font-semibold text-center py-1 border-b border-gray-400`;
       header.textContent = type;
@@ -194,13 +194,13 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     const instance = jsPlumbInstanceRef.current;
 
     const positions = {
-      choice: { top: 200, left: 50 },
-      idCollection: { top: 100, left: 300 },
-      passportCollection: { top: 300, left: 300 },
-      confirmation: { top: 200, left: 550 },
-      verification: { top: 200, left: 750 },
-      success: { top: 100, left: 950 },
-      failed: { top: 300, left: 950 }
+      choice: { top: 150, left: 30 },
+      idCollection: { top: 80, left: 280 },
+      passportCollection: { top: 220, left: 280 },
+      confirmation: { top: 150, left: 500 },
+      verification: { top: 150, left: 720 },
+      success: { top: 80, left: 940 },
+      failed: { top: 220, left: 940 }
     };
 
     const blocks = [
@@ -220,7 +220,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       
       const colorClass = colorMap[block.type];
       const isCollectionBlock = block.type === "ID Collection" || block.type === "Passport Collection";
-      const blockSize = isCollectionBlock ? "w-48 h-32" : "w-44 h-28";
+      const blockSize = isCollectionBlock ? "w-36 h-24" : "w-32 h-20";
       element.className = `absolute ${blockSize} bg-white border border-gray-400 rounded-lg shadow-md flex flex-col overflow-hidden cursor-move`;
       
       const header = document.createElement("div");
@@ -293,49 +293,133 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
         target: idCollectionEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "IF: ID choisi",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-1",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (choiceEl && passportCollectionEl) instance.connect({ 
         source: choiceEl, 
         target: passportCollectionEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "IF: Passeport choisi",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-2",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (idCollectionEl && confirmationEl) instance.connect({ 
         source: idCollectionEl, 
         target: confirmationEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "→ Données ID collectées",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-3",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (passportCollectionEl && confirmationEl) instance.connect({ 
         source: passportCollectionEl, 
         target: confirmationEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "→ Données Passeport collectées",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-4",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (confirmationEl && verificationEl) instance.connect({ 
         source: confirmationEl, 
         target: verificationEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "→ Confirmation OK",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-5",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (verificationEl && successEl) instance.connect({ 
         source: verificationEl, 
         target: successEl,
         anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        paintStyle: { stroke: "#22C55E", strokeWidth: 2 },
+        endpointStyle: { fill: "#22C55E", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "IF: Vérification réussie",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-6",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
       if (verificationEl && failedEl) instance.connect({ 
         source: verificationEl, 
         target: failedEl,
         anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 }
+        paintStyle: { stroke: "#EF4444", strokeWidth: 2 },
+        endpointStyle: { fill: "#EF4444", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "IF: Vérification échouée",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-7",
+              labelOffset: { x: 8, y: -20 }
+            }
+          }
+        ]
       });
     }, 100);
 

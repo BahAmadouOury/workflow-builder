@@ -6,7 +6,19 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onExportWorkflow }) => {
   const blockGroups = [
-    { label: "Actions", blocks: ["Identity Choice", "ID Collection", "Passport Collection", "Information Confirmation", "Identity Verification", "Verification Success", "Verification Failed"] }
+    { 
+      label: "Workflow d'Identité", 
+      blocks: [
+        "InformationConfirmation", 
+        "IdentityChoice", 
+        "IDCollection", 
+        "PassportCollection", 
+        "SelfieCapture", 
+        "IdentityVerification", 
+        "VerificationSuccess", 
+        "VerificationFailed"
+      ] 
+    }
   ];
 
   return (

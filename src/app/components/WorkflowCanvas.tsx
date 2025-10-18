@@ -6,9 +6,15 @@ import { FieldDefinition } from './types';
 
 interface WorkflowCanvasProps {
   onExportWorkflow: () => void;
+  blockFields: Record<string, FieldDefinition[]>;
+  setBlockFields: React.Dispatch<React.SetStateAction<Record<string, FieldDefinition[]>>>;
 }
 
-export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow }) => {
+export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow, blockFields, setBlockFields }) => {
+  console.log('WorkflowCanvas - Received blockFields:', blockFields);
+  console.log('WorkflowCanvas - blockFields keys:', Object.keys(blockFields));
+  console.log('WorkflowCanvas - id-collection fields:', blockFields['id-collection']);
+  console.log('WorkflowCanvas - passport-collection fields:', blockFields['passport-collection']);
   const containerRef = useRef<HTMLDivElement>(null);
   const { jsPlumbInstanceRef, addEndpoints } = useJsPlumb(containerRef);
   const {
@@ -16,8 +22,6 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     showBlockModal,
     editingFieldIndex,
     setEditingFieldIndex,
-    blockFields,
-    setBlockFields,
     handleFieldClick,
     handleBlockDoubleClick,
     handleBlockModalClose,
@@ -28,7 +32,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
   useEffect(() => {
     if (jsPlumbInstanceRef.current && containerRef.current) {
       // Vérifier si des blocs existent déjà pour éviter la duplication
-      const existingBlocks = containerRef.current.querySelectorAll('[id^="identity-"], [id^="id-"], [id^="passport-"], [id^="confirmation"], [id^="verification"], [id^="success"], [id^="failed"]');
+      const existingBlocks = containerRef.current.querySelectorAll('[id^="intro"], [id^="identity-choice"], [id^="id-collection"], [id^="passport-collection"], [id^="image-review"], [id^="selfie-capture"], [id^="selfie-review"], [id^="identity-verification"], [id^="success"], [id^="failed"]');
       
       if (existingBlocks.length === 0) {
         setTimeout(() => {
@@ -46,13 +50,14 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     "Switch / Case": "bg-orange-500",
     "Input": "bg-purple-400",
     "Output": "bg-purple-500",
-    "Identity Choice": "bg-cyan-400",
-    "ID Collection": "bg-blue-500",
-    "Passport Collection": "bg-indigo-500",
-    "Information Confirmation": "bg-yellow-400",
-    "Identity Verification": "bg-orange-600",
-    "Verification Success": "bg-green-500",
-    "Verification Failed": "bg-red-500",
+    "InformationConfirmation": "bg-yellow-400",
+    "IdentityChoice": "bg-cyan-400",
+    "IDCollection": "bg-blue-500",
+    "PassportCollection": "bg-indigo-500",
+    "SelfieCapture": "bg-purple-500",
+    "IdentityVerification": "bg-orange-600",
+    "VerificationSuccess": "bg-green-500",
+    "VerificationFailed": "bg-red-500",
   };
 
   // Gestion des événements
@@ -130,7 +135,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     addEndpoints(jsPlumbInstanceRef.current, newBlock);
 
     // Initialiser les champs pour les blocs de collecte
-    if (type === "ID Collection" || type === "Passport Collection") {
+    if (type === "IDCollection" || type === "PassportCollection") {
       const defaultFields: FieldDefinition[] = [
         {
           name: "nom",
@@ -151,8 +156,8 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           depends_on: ""
         },
         {
-          name: type === "ID Collection" ? "numero_id" : "numero_passeport",
-          label: type === "ID Collection" ? "Numéro ID" : "Numéro Passeport",
+          name: type === "IDCollection" ? "numero_id" : "numero_passeport",
+          label: type === "IDCollection" ? "Numéro ID" : "Numéro Passeport",
           field_type: "text",
           is_required: true,
           is_multiple: false,
@@ -175,7 +180,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     const instance = jsPlumbInstanceRef.current;
     
     // Supprimer tous les blocs existants du workflow d'identité
-    const existingBlocks = container.querySelectorAll('[id^="identity-"], [id^="id-"], [id^="passport-"], [id^="confirmation"], [id^="verification"], [id^="success"], [id^="failed"]');
+    const existingBlocks = container.querySelectorAll('[id^="intro"], [id^="identity-choice"], [id^="id-collection"], [id^="passport-collection"], [id^="image-review"], [id^="selfie-capture"], [id^="selfie-review"], [id^="identity-verification"], [id^="success"], [id^="failed"]');
     existingBlocks.forEach(block => {
       // Détacher toutes les connexions du bloc
       instance.removeAllEndpoints(block);
@@ -194,23 +199,29 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     const instance = jsPlumbInstanceRef.current;
 
     const positions = {
-      choice: { top: 150, left: 30 },
-      idCollection: { top: 80, left: 280 },
-      passportCollection: { top: 220, left: 280 },
-      confirmation: { top: 150, left: 500 },
-      verification: { top: 150, left: 720 },
-      success: { top: 80, left: 940 },
-      failed: { top: 220, left: 940 }
+      intro: { top: 150, left: 20 },
+      identityChoice: { top: 150, left: 180 },
+      idCollection: { top: 80, left: 340 },
+      passportCollection: { top: 220, left: 340 },
+      imageReview: { top: 150, left: 500 },
+      selfieCapture: { top: 150, left: 660 },
+      selfieReview: { top: 150, left: 820 },
+      identityVerification: { top: 150, left: 980 },
+      success: { top: 80, left: 1140 },
+      failed: { top: 220, left: 1140 }
     };
 
     const blocks = [
-      { id: "identity-choice", type: "Identity Choice", pos: positions.choice },
-      { id: "id-collection", type: "ID Collection", pos: positions.idCollection },
-      { id: "passport-collection", type: "Passport Collection", pos: positions.passportCollection },
-      { id: "confirmation", type: "Information Confirmation", pos: positions.confirmation },
-      { id: "verification", type: "Identity Verification", pos: positions.verification },
-      { id: "success", type: "Verification Success", pos: positions.success },
-      { id: "failed", type: "Verification Failed", pos: positions.failed }
+      { id: "intro", type: "InformationConfirmation", pos: positions.intro },
+      { id: "identity-choice", type: "IdentityChoice", pos: positions.identityChoice },
+      { id: "id-collection", type: "IDCollection", pos: positions.idCollection },
+      { id: "passport-collection", type: "PassportCollection", pos: positions.passportCollection },
+      { id: "image-review", type: "InformationConfirmation", pos: positions.imageReview },
+      { id: "selfie-capture", type: "SelfieCapture", pos: positions.selfieCapture },
+      { id: "selfie-review", type: "InformationConfirmation", pos: positions.selfieReview },
+      { id: "identity-verification", type: "IdentityVerification", pos: positions.identityVerification },
+      { id: "success", type: "VerificationSuccess", pos: positions.success },
+      { id: "failed", type: "VerificationFailed", pos: positions.failed }
     ];
 
     // Créer chaque bloc
@@ -219,8 +230,8 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       element.id = block.id;
       
       const colorClass = colorMap[block.type];
-      const isCollectionBlock = block.type === "ID Collection" || block.type === "Passport Collection";
-      const blockSize = isCollectionBlock ? "w-36 h-24" : "w-32 h-20";
+      const isCollectionBlock = block.type === "IDCollection" || block.type === "PassportCollection";
+      const blockSize = isCollectionBlock ? "w-32 h-20" : "w-28 h-16";
       element.className = `absolute ${blockSize} bg-white border border-gray-400 rounded-lg shadow-md flex flex-col overflow-hidden cursor-move`;
       
       const header = document.createElement("div");
@@ -228,43 +239,41 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       header.textContent = block.type;
 
       const body = document.createElement("div");
-      body.className = "flex-1 flex items-center justify-center text-xs text-gray-700 bg-white px-2 text-center";
+      body.className = "flex-1 flex items-center justify-center text-xs text-gray-700 bg-white px-1 text-center";
       
-      // Contenu spécifique selon le type
-      switch(block.type) {
-        case "Identity Choice":
-          body.textContent = "Choisir: ID ou Passeport";
-          break;
-        case "ID Collection":
-          body.innerHTML = `
-            <div class="text-center">
-              <div class="font-semibold mb-1">Collecter:</div>
-              <div class="text-xs text-gray-500">Double-clique pour configurer</div>
-            </div>
-          `;
-          break;
-        case "Passport Collection":
-          body.innerHTML = `
-            <div class="text-center">
-              <div class="font-semibold mb-1">Collecter:</div>
-              <div class="text-xs text-gray-500">Double-clique pour configurer</div>
-            </div>
-          `;
-          break;
-        case "Information Confirmation":
-          body.textContent = "Confirmer les informations saisies";
-          break;
-        case "Identity Verification":
-          body.textContent = "Vérifier l'identité";
-          break;
-        case "Verification Success":
-          body.textContent = "✅ Identité vérifiée";
-          break;
-        case "Verification Failed":
-          body.textContent = "❌ Échec de vérification";
-          break;
-        default:
-          body.textContent = "Double-clique pour éditer";
+      // Contenu spécifique selon le type et l'ID
+      if (block.id === "intro") {
+        body.textContent = "Introduction";
+      } else if (block.id === "identity-choice") {
+        body.textContent = "Choisir document";
+      } else if (block.id === "id-collection") {
+        body.innerHTML = `
+          <div class="text-center">
+            <div class="font-semibold mb-1 text-xs">Collecter:</div>
+            <div class="text-xs text-gray-500">Double-clique</div>
+          </div>
+        `;
+      } else if (block.id === "passport-collection") {
+        body.innerHTML = `
+          <div class="text-center">
+            <div class="font-semibold mb-1 text-xs">Collecter:</div>
+            <div class="text-xs text-gray-500">Double-clique</div>
+          </div>
+        `;
+      } else if (block.id === "image-review") {
+        body.textContent = "Revue image";
+      } else if (block.id === "selfie-capture") {
+        body.textContent = "Selfie";
+      } else if (block.id === "selfie-review") {
+        body.textContent = "Vérif selfie";
+      } else if (block.id === "identity-verification") {
+        body.textContent = "Vérification";
+      } else if (block.id === "success") {
+        body.textContent = "✅ Succès";
+      } else if (block.id === "failed") {
+        body.textContent = "❌ Échec";
+      } else {
+        body.textContent = "Double-clique pour éditer";
       }
 
       element.appendChild(header);
@@ -280,16 +289,40 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
 
     // Créer les connexions
     setTimeout(() => {
-      const choiceEl = document.getElementById("identity-choice");
+      const introEl = document.getElementById("intro");
+      const identityChoiceEl = document.getElementById("identity-choice");
       const idCollectionEl = document.getElementById("id-collection");
       const passportCollectionEl = document.getElementById("passport-collection");
-      const confirmationEl = document.getElementById("confirmation");
-      const verificationEl = document.getElementById("verification");
+      const imageReviewEl = document.getElementById("image-review");
+      const selfieCaptureEl = document.getElementById("selfie-capture");
+      const selfieReviewEl = document.getElementById("selfie-review");
+      const identityVerificationEl = document.getElementById("identity-verification");
       const successEl = document.getElementById("success");
       const failedEl = document.getElementById("failed");
 
-      if (choiceEl && idCollectionEl) instance.connect({ 
-        source: choiceEl, 
+      // Connexions selon le flowchart
+      if (introEl && identityChoiceEl) instance.connect({ 
+        source: introEl, 
+        target: identityChoiceEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "→ Début",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-1",
+              labelOffset: { x: 0, y: -30 }
+            }
+          }
+        ]
+      });
+      
+      if (identityChoiceEl && idCollectionEl) instance.connect({ 
+        source: identityChoiceEl, 
         target: idCollectionEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
@@ -298,17 +331,18 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "IF: ID choisi",
+              label: "CNI/Permis/Électorale",
               cssClass: "connection-label",
               location: 0.5,
-              id: "label-1",
-              labelOffset: { x: 8, y: -20 }
+              id: "label-2",
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
       });
-      if (choiceEl && passportCollectionEl) instance.connect({ 
-        source: choiceEl, 
+      
+      if (identityChoiceEl && passportCollectionEl) instance.connect({ 
+        source: identityChoiceEl, 
         target: passportCollectionEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
@@ -317,37 +351,19 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "IF: Passeport choisi",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-2",
-              labelOffset: { x: 8, y: -20 }
-            }
-          }
-        ]
-      });
-      if (idCollectionEl && confirmationEl) instance.connect({ 
-        source: idCollectionEl, 
-        target: confirmationEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "→ Données ID collectées",
+              label: "Passeport",
               cssClass: "connection-label",
               location: 0.5,
               id: "label-3",
-              labelOffset: { x: 8, y: -20 }
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
       });
-      if (passportCollectionEl && confirmationEl) instance.connect({ 
-        source: passportCollectionEl, 
-        target: confirmationEl,
+      
+      if (idCollectionEl && imageReviewEl) instance.connect({ 
+        source: idCollectionEl, 
+        target: imageReviewEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
         endpointStyle: { fill: "#4A90E2", radius: 4 },
@@ -355,18 +371,19 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "→ Données Passeport collectées",
+              label: "→ Document capturé",
               cssClass: "connection-label",
               location: 0.5,
               id: "label-4",
-              labelOffset: { x: 8, y: -20 }
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
       });
-      if (confirmationEl && verificationEl) instance.connect({ 
-        source: confirmationEl, 
-        target: verificationEl,
+      
+      if (passportCollectionEl && imageReviewEl) instance.connect({ 
+        source: passportCollectionEl, 
+        target: imageReviewEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
         endpointStyle: { fill: "#4A90E2", radius: 4 },
@@ -374,17 +391,78 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "→ Confirmation OK",
+              label: "→ Passeport capturé",
               cssClass: "connection-label",
               location: 0.5,
               id: "label-5",
-              labelOffset: { x: 8, y: -20 }
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
       });
-      if (verificationEl && successEl) instance.connect({ 
-        source: verificationEl, 
+      
+      if (imageReviewEl && selfieCaptureEl) instance.connect({ 
+        source: imageReviewEl, 
+        target: selfieCaptureEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "Confirmé",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-6",
+              labelOffset: { x: 0, y: -30 }
+            }
+          }
+        ]
+      });
+      
+      if (selfieCaptureEl && selfieReviewEl) instance.connect({ 
+        source: selfieCaptureEl, 
+        target: selfieReviewEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "→ Selfie capturé",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-7",
+              labelOffset: { x: 0, y: -30 }
+            }
+          }
+        ]
+      });
+      
+      if (selfieReviewEl && identityVerificationEl) instance.connect({ 
+        source: selfieReviewEl, 
+        target: identityVerificationEl,
+        anchors: ["Right", "Left"],
+        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
+        endpointStyle: { fill: "#4A90E2", radius: 4 },
+        overlays: [
+          {
+            type: "Label",
+            options: { 
+              label: "Confirmé",
+              cssClass: "connection-label",
+              location: 0.5,
+              id: "label-8",
+              labelOffset: { x: 0, y: -30 }
+            }
+          }
+        ]
+      });
+      
+      if (identityVerificationEl && successEl) instance.connect({ 
+        source: identityVerificationEl, 
         target: successEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#22C55E", strokeWidth: 2 },
@@ -393,17 +471,18 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "IF: Vérification réussie",
+              label: "OK",
               cssClass: "connection-label",
               location: 0.5,
-              id: "label-6",
-              labelOffset: { x: 8, y: -20 }
+              id: "label-9",
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
       });
-      if (verificationEl && failedEl) instance.connect({ 
-        source: verificationEl, 
+      
+      if (identityVerificationEl && failedEl) instance.connect({ 
+        source: identityVerificationEl, 
         target: failedEl,
         anchors: ["Right", "Left"],
         paintStyle: { stroke: "#EF4444", strokeWidth: 2 },
@@ -412,11 +491,11 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
           {
             type: "Label",
             options: { 
-              label: "IF: Vérification échouée",
+              label: "KO",
               cssClass: "connection-label",
               location: 0.5,
-              id: "label-7",
-              labelOffset: { x: 8, y: -20 }
+              id: "label-10",
+              labelOffset: { x: 0, y: -30 }
             }
           }
         ]
@@ -484,11 +563,8 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       }
     ];
 
-    setBlockFields(prev => ({
-      ...prev,
-      "id-collection": idCollectionFields,
-      "passport-collection": passportCollectionFields
-    }));
+    // Les champs sont maintenant gérés par le composant parent
+    // On ne les initialise plus ici
   };
 
   const syncFieldDisplay = (blockId: string, forceUpdate = false) => {
@@ -520,6 +596,90 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     }
   };
 
+  const exportWorkflow = () => {
+    if (!containerRef.current || !jsPlumbInstanceRef.current) return;
+
+    const container = containerRef.current;
+    const instance = jsPlumbInstanceRef.current;
+    
+    console.log('Export - Current blockFields:', blockFields);
+    console.log('Export - blockFields keys:', Object.keys(blockFields));
+    console.log('Export - id-collection fields:', blockFields['id-collection']);
+    console.log('Export - passport-collection fields:', blockFields['passport-collection']);
+    
+    // Forcer la récupération des champs depuis l'état local
+    const currentBlockFields = blockFields;
+    
+    // Récupérer tous les blocs
+    const blocks = Array.from(container.querySelectorAll('[id]')).map(block => {
+      const element = block as HTMLElement;
+      const rect = element.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      // Récupérer les champs pour ce bloc
+      const blockId = element.id;
+      const fields = currentBlockFields[blockId] || [];
+      
+      // Debug pour chaque bloc
+      if (blockId === 'id-collection' || blockId === 'passport-collection') {
+        console.log(`Debug ${blockId}:`, {
+          blockId,
+          fields,
+          currentBlockFieldsKeys: Object.keys(currentBlockFields),
+          hasFields: currentBlockFields[blockId] ? 'YES' : 'NO',
+          fieldsLength: fields.length
+        });
+      }
+      
+      return {
+        id: element.id,
+        type: element.querySelector('div:first-child')?.textContent || 'Unknown',
+        position: {
+          x: rect.left - containerRect.left,
+          y: rect.top - containerRect.top
+        },
+        size: {
+          width: rect.width,
+          height: rect.height
+        },
+        fields: fields
+      };
+    });
+
+    // Récupérer toutes les connexions
+    const connections = Object.values(instance.getConnections()).map((conn: any) => ({
+      source: conn.sourceId,
+      target: conn.targetId,
+      label: conn.getOverlay('label')?.getLabel() || ''
+    }));
+
+    const workflowData = {
+      metadata: {
+        name: "Workflow d'Identité",
+        version: "1.0.0",
+        createdAt: new Date().toISOString(),
+        description: "Workflow de vérification d'identité avec collecte de documents"
+      },
+      blocks,
+      connections,
+      settings: {
+        canvasSize: {
+          width: container.scrollWidth,
+          height: container.scrollHeight
+        }
+      }
+    };
+
+    console.log('=== EXPORT WORKFLOW ===');
+    console.log('BlockFields state:', blockFields);
+    console.log('Available block IDs:', Object.keys(blockFields));
+    console.log('Blocks found:', blocks.map(b => ({ id: b.id, type: b.type, fieldsCount: b.fields.length })));
+    console.log('Workflow data:', JSON.stringify(workflowData, null, 2));
+    console.log('======================');
+    
+    return workflowData;
+  };
+
   // Fonction pour réinitialiser le workflow (utile pour le débogage)
   const resetWorkflow = () => {
     clearExistingWorkflow();
@@ -528,6 +688,11 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       createIdentityWorkflow();
     }, 100);
   };
+
+  // Connecter la fonction d'export
+  useEffect(() => {
+    (window as any).exportWorkflow = exportWorkflow;
+  }, []);
 
   return (
     <>

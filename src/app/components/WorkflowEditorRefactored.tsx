@@ -10,6 +10,81 @@ WorkflowEditorRefactored() {
   const containerRef = useRef<HTMLDivElement>(null);
   const jsPlumbInstanceRef = useRef<BrowserJsPlumbInstance | null>(null);
   const [blockFields, setBlockFields] = useState<Record<string, FieldDefinition[]>>({});
+  
+  // Initialiser les champs pour les blocs de collecte
+  useEffect(() => {
+    console.log('Parent - Initializing blockFields...');
+    const idCollectionFields: FieldDefinition[] = [
+      {
+        name: "nom",
+        label: "Nom",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 0,
+        depends_on: ""
+      },
+      {
+        name: "prenom",
+        label: "Prénom",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 1,
+        depends_on: ""
+      },
+      {
+        name: "numero_id",
+        label: "Numéro ID",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 2,
+        depends_on: ""
+      }
+    ];
+
+    const passportCollectionFields: FieldDefinition[] = [
+      {
+        name: "nom",
+        label: "Nom",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 0,
+        depends_on: ""
+      },
+      {
+        name: "prenom",
+        label: "Prénom",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 1,
+        depends_on: ""
+      },
+      {
+        name: "numero_passeport",
+        label: "Numéro Passeport",
+        field_type: "text",
+        is_required: true,
+        is_multiple: false,
+        order: 2,
+        depends_on: ""
+      }
+    ];
+
+    setBlockFields(prev => {
+      const newFields = {
+        ...prev,
+        "id-collection": idCollectionFields,
+        "passport-collection": passportCollectionFields
+      };
+      console.log('Parent - Setting block fields - prev:', prev);
+      console.log('Parent - Setting block fields - new:', newFields);
+      return newFields;
+    });
+  }, []);
 
   // Initialisation jsPlumb
   useEffect(() => {
@@ -265,76 +340,27 @@ WorkflowEditorRefactored() {
   };
 
   const exportWorkflow = () => {
-    if (!jsPlumbInstanceRef.current || !containerRef.current) return;
-  
-    const blocks = Array.from(containerRef.current.children)
-      .filter((el) => el.id && !el.classList.contains("jtk-endpoint"))
-      .map((el) => {
-        const rect = el.getBoundingClientRect();
-        const containerRect = containerRef.current!.getBoundingClientRect();
-        const type = el.querySelector("div:first-child")?.textContent || el.textContent;
-        const body = el.querySelector("div:last-child")?.textContent?.trim() || "";
-        
-        const blockData: any = {
-          id: el.id,
-          type,
-          position: {
-            top: Math.round(rect.top - containerRect.top),
-            left: Math.round(rect.left - containerRect.left)
-          },
-          content: body,
-        };
-
-        if (blockFields[el.id] && blockFields[el.id].length > 0) {
-          blockData.fields = blockFields[el.id].map(field => ({
-            name: field.name,
-            label: field.label,
-            field_type: field.field_type,
-            is_required: field.is_required,
-            is_multiple: field.is_multiple,
-            order: field.order,
-            depends_on: field.depends_on
-          }));
-        }
-
-        return blockData;
-      });
-  
-    const connectionsData = jsPlumbInstanceRef.current.getConnections();
-    const connections = Array.isArray(connectionsData) 
-      ? connectionsData 
-      : Object.values(connectionsData);
-    const connectionsList = connections.map((conn, index) => ({
-      id: `conn-${index}`,
-      source: conn.sourceId,
-      target: conn.targetId,
-      type: "connection"
-    }));
-  
-    const workflow = { 
-      metadata: {
-        name: "Identity Verification Workflow",
-        version: "1.0.0",
-        created_at: new Date().toISOString(),
-        description: "Workflow for identity verification with customizable fields"
-      },
-      workflow: {
-        blocks,
-        connections: connectionsList
-      }
-    };
-  
-    console.clear();
-    console.log("🧱 Structure du workflow :");
-    console.log(workflow);
-    console.log("📜 JSON formaté :");
-    console.log(JSON.stringify(workflow, null, 2));
+    // Utiliser la fonction d'export du WorkflowCanvas
+    if ((window as any).exportWorkflow) {
+      (window as any).exportWorkflow();
+    } else {
+      console.log("⚠️ Fonction d'export non disponible");
+    }
   };
 
+  console.log('Parent - Rendering with blockFields:', blockFields);
+  console.log('Parent - blockFields keys:', Object.keys(blockFields));
+  
   return (
     <div className="w-screen h-screen flex gap-4">
       <Sidebar onExportWorkflow={exportWorkflow} />
-      <WorkflowCanvas onExportWorkflow={exportWorkflow} />
+      <WorkflowCanvas 
+        onExportWorkflow={exportWorkflow} 
+        blockFields={blockFields}
+        setBlockFields={setBlockFields}
+      />
+      
+   
     </div>
   );
 }

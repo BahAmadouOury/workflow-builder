@@ -12,9 +12,9 @@ export const useFieldManagement = () => {
   const handleFieldClick = useCallback((blockId: string, fieldName: string) => {
     const blockElement = document.getElementById(blockId);
     const blockType = blockElement?.querySelector('div:first-child')?.textContent || 'Unknown';
-    
+
     // Ouvrir la modale seulement pour les blocs de collecte
-    if (blockType === "ID Collection" || blockType === "Passport Collection") {
+    if (blockType === "IDCollection" || blockType === "PassportCollection") {
       setEditingBlock({ blockId, blockType });
       setShowBlockModal(true);
     }
@@ -22,7 +22,7 @@ export const useFieldManagement = () => {
 
   const handleBlockDoubleClick = useCallback((blockId: string, blockType: string) => {
     // Ouvrir la modale seulement pour les blocs de collecte
-    if (blockType === "ID Collection" || blockType === "Passport Collection") {
+    if (blockType === "IDCollection" || blockType === "PassportCollection") {
       setEditingBlock({ blockId, blockType });
       setShowBlockModal(true);
     }

@@ -36,7 +36,7 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
   const [localFieldData, setLocalFieldData] = useState<FieldDefinition | null>(null);
 
   const blockFieldsData = blockFields[editingBlock?.blockId || ''] || [];
-  const isCollectionBlock = editingBlock?.blockType === "ID Collection" || editingBlock?.blockType === "Passport Collection";
+  const isCollectionBlock = editingBlock?.blockType === "IDCollection" || editingBlock?.blockType === "PassportCollection";
   
 
   // Initialiser les données locales quand on entre en mode édition
@@ -63,121 +63,121 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
             {isCollectionBlock && (
               <>
                 {blockFieldsData.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-700">Champs configurés:</h4>
-                    {blockFieldsData
-                      .sort((a, b) => a.order - b.order)
-                      .map((field, index) => (
-                        <div key={field.name} className="border border-gray-200 rounded-lg p-4">
+              <div className="space-y-4">
+                <h4 className="font-medium text-gray-700">Champs configurés:</h4>
+                {blockFieldsData
+                  .sort((a, b) => a.order - b.order)
+                  .map((field, index) => (
+                    <div key={field.name} className="border border-gray-200 rounded-lg p-4">
                           {editingFieldIndex === index && localFieldData ? (
                             // Mode édition avec données locales
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du champ</label>
-                                  <input
-                                    type="text"
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Nom du champ</label>
+                              <input
+                                type="text"
                                     value={localFieldData.name}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, name: e.target.value } : null)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Label affiché</label>
-                                  <input
-                                    type="text"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Label affiché</label>
+                              <input
+                                type="text"
                                     value={localFieldData.label}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, label: e.target.value } : null)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Type de champ</label>
-                                  <select
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Type de champ</label>
+                              <select
                                     value={localFieldData.field_type}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, field_type: e.target.value } : null)}
-                                  >
-                                    <option value="text">Texte</option>
-                                    <option value="number">Nombre</option>
-                                    <option value="email">Email</option>
-                                    <option value="date">Date</option>
-                                    <option value="select">Sélection</option>
-                                    <option value="checkbox">Case à cocher</option>
-                                    <option value="textarea">Zone de texte</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
-                                  <input
-                                    type="number"
+                              >
+                                <option value="text">Texte</option>
+                                <option value="number">Nombre</option>
+                                <option value="email">Email</option>
+                                <option value="date">Date</option>
+                                <option value="select">Sélection</option>
+                                <option value="checkbox">Case à cocher</option>
+                                <option value="textarea">Zone de texte</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
+                              <input
+                                type="number"
                                     value={localFieldData.order}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, order: parseInt(e.target.value) || 0 } : null)}
-                                  />
-                                </div>
-                              </div>
-                              
-                              <div className="flex space-x-4">
-                                <label className="flex items-center">
-                                  <input
-                                    type="checkbox"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
                                     checked={localFieldData.is_required}
-                                    className="mr-2"
+                                className="mr-2"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, is_required: e.target.checked } : null)}
-                                  />
-                                  <span className="text-sm text-gray-700">Requis</span>
-                                </label>
-                                <label className="flex items-center">
-                                  <input
-                                    type="checkbox"
+                              />
+                              <span className="text-sm text-gray-700">Requis</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
                                     checked={localFieldData.is_multiple}
-                                    className="mr-2"
+                                className="mr-2"
                                     onChange={(e) => setLocalFieldData(prev => prev ? { ...prev, is_multiple: e.target.checked } : null)}
-                                  />
-                                  <span className="text-sm text-gray-700">Multiple</span>
-                                </label>
-                              </div>
-                              
-                              <div className="flex justify-end space-x-2">
-                                <button
+                              />
+                              <span className="text-sm text-gray-700">Multiple</span>
+                            </label>
+                          </div>
+                          
+                          <div className="flex justify-end space-x-2">
+                            <button
                                   onClick={() => {
                                     setEditingFieldIndex(null);
                                     setLocalFieldData(null);
                                   }}
-                                  className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
-                                >
-                                  Annuler
-                                </button>
-                                <button
-                                  onClick={() => {
+                              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={() => {
                                     if (localFieldData) {
                                       // Appliquer tous les changements en une seule fois
                                       Object.keys(localFieldData).forEach(key => {
                                         updateFieldProperty(editingBlock.blockId, index, key as keyof FieldDefinition, localFieldData[key as keyof FieldDefinition]);
                                       });
                                     }
-                                    setEditingFieldIndex(null);
+                                setEditingFieldIndex(null);
                                     setLocalFieldData(null);
-                                    setTimeout(() => syncFieldDisplay(editingBlock.blockId, true), 50);
-                                  }}
-                                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                >
-                                  Sauvegarder
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            // Mode affichage
+                                setTimeout(() => syncFieldDisplay(editingBlock.blockId, true), 50);
+                              }}
+                              className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                              Sauvegarder
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        // Mode affichage
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
                             <div>
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h5 className="font-medium text-gray-800">{field.label}</h5>
-                                  <p className="text-xs text-gray-500">Type: {field.field_type} | Ordre: {field.order}</p>
-                                </div>
+                              <h5 className="font-medium text-gray-800">{field.label}</h5>
+                              <p className="text-xs text-gray-500">Type: {field.field_type} | Ordre: {field.order}</p>
+                            </div>
                                 <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => setEditingFieldIndex(index)}
+                            <button
+                              onClick={() => setEditingFieldIndex(index)}
                                     className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50 transition-colors"
                                     title="Éditer le champ"
                                   >
@@ -201,46 +201,46 @@ export const BlockEditModal: React.FC<BlockEditModalProps> = ({
                                     title="Supprimer le champ"
                                   >
                                     <Trash2 size={16} />
-                                  </button>
+                            </button>
                                 </div>
-                              </div>
-                              
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <div>Requis: {field.is_required ? 'Oui' : 'Non'}</div>
-                                <div>Multiple: {field.is_multiple ? 'Oui' : 'Non'}</div>
-                                {field.depends_on && <div>Dépend de: {field.depends_on}</div>}
-                              </div>
-                            </div>
-                          )}
+                          </div>
+                          
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <div>Requis: {field.is_required ? 'Oui' : 'Non'}</div>
+                            <div>Multiple: {field.is_multiple ? 'Oui' : 'Non'}</div>
+                            {field.depends_on && <div>Dépend de: {field.depends_on}</div>}
+                          </div>
                         </div>
-                      ))}
-                  </div>
-                )}
-                
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+            
                 {/* Bouton pour ajouter un nouveau champ - toujours visible pour les blocs de collecte */}
-                <div className="border-t border-gray-200 pt-4">
-                  <button
-                    onClick={() => {
-                      const newField: FieldDefinition = {
-                        name: `nouveau_champ_${Date.now()}`,
-                        label: "Nouveau Champ",
-                        field_type: "text",
-                        is_required: false,
-                        is_multiple: false,
-                        order: blockFieldsData.length,
-                        depends_on: ""
-                      };
-                      
-                      setBlockFields(prev => ({
-                        ...prev,
-                        [editingBlock.blockId]: [...(prev[editingBlock.blockId] || []), newField]
-                      }));
-                    }}
-                    className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700"
-                  >
-                    + Ajouter un nouveau champ
-                  </button>
-                </div>
+            <div className="border-t border-gray-200 pt-4">
+              <button
+                onClick={() => {
+                  const newField: FieldDefinition = {
+                    name: `nouveau_champ_${Date.now()}`,
+                    label: "Nouveau Champ",
+                    field_type: "text",
+                    is_required: false,
+                    is_multiple: false,
+                    order: blockFieldsData.length,
+                    depends_on: ""
+                  };
+                  
+                  setBlockFields(prev => ({
+                    ...prev,
+                    [editingBlock.blockId]: [...(prev[editingBlock.blockId] || []), newField]
+                  }));
+                }}
+                className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700"
+              >
+                + Ajouter un nouveau champ
+              </button>
+            </div>
               </>
             )}
 

@@ -131,7 +131,7 @@
   border-radius: 8px;
   padding: 2px 6px;
   position: absolute;
-  transform: translateY(-15px) translateX(5px);
+  transform: translateY(-25px) translateX(0px);
   z-index: 10;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

@@ -11,10 +11,6 @@ interface WorkflowCanvasProps {
 }
 
 export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow, blockFields, setBlockFields }) => {
-  console.log('WorkflowCanvas - Received blockFields:', blockFields);
-  console.log('WorkflowCanvas - blockFields keys:', Object.keys(blockFields));
-  console.log('WorkflowCanvas - id-collection fields:', blockFields['id-collection']);
-  console.log('WorkflowCanvas - passport-collection fields:', blockFields['passport-collection']);
   const containerRef = useRef<HTMLDivElement>(null);
   const { jsPlumbInstanceRef, addEndpoints } = useJsPlumb(containerRef);
   const {
@@ -181,16 +177,33 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     
     // Supprimer tous les blocs existants du workflow d'identité
     const existingBlocks = container.querySelectorAll('[id^="intro"], [id^="identity-choice"], [id^="id-collection"], [id^="passport-collection"], [id^="image-review"], [id^="selfie-capture"], [id^="selfie-review"], [id^="identity-verification"], [id^="success"], [id^="failed"]');
-    existingBlocks.forEach(block => {
-      // Détacher toutes les connexions du bloc
-      instance.removeAllEndpoints(block);
-      // Supprimer le bloc du DOM
-      block.remove();
-    });
+    
+    if (existingBlocks.length > 0) {
+      existingBlocks.forEach(block => {
+        // Détacher toutes les connexions du bloc
+        instance.removeAllEndpoints(block);
+        // Supprimer le bloc du DOM
+        block.remove();
+      });
+      
+      // Supprimer toutes les connexions existantes seulement après avoir supprimé les blocs
+      instance.deleteEveryConnection();
+      
+      // Forcer le redraw de l'instance
+      instance.repaintEverything();
+    }
   };
 
   const createIdentityWorkflow = () => {
-    if (!containerRef.current || !jsPlumbInstanceRef.current) return;
+    if (!containerRef.current || !jsPlumbInstanceRef.current) {
+      return;
+    }
+
+    // Vérifier si le workflow existe déjà
+    const existingBlocks = containerRef.current.querySelectorAll('[id^="intro"], [id^="identity-choice"], [id^="id-collection"], [id^="passport-collection"], [id^="image-review"], [id^="selfie-capture"], [id^="selfie-review"], [id^="identity-verification"], [id^="success"], [id^="failed"]');
+    if (existingBlocks.length > 0) {
+      return;
+    }
 
     // Nettoyer d'abord les blocs existants
     clearExistingWorkflow();
@@ -287,220 +300,10 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
       addEndpoints(instance, element);
     });
 
-    // Créer les connexions
+    // Créer les connexions avec la nouvelle fonction robuste
     setTimeout(() => {
-      const introEl = document.getElementById("intro");
-      const identityChoiceEl = document.getElementById("identity-choice");
-      const idCollectionEl = document.getElementById("id-collection");
-      const passportCollectionEl = document.getElementById("passport-collection");
-      const imageReviewEl = document.getElementById("image-review");
-      const selfieCaptureEl = document.getElementById("selfie-capture");
-      const selfieReviewEl = document.getElementById("selfie-review");
-      const identityVerificationEl = document.getElementById("identity-verification");
-      const successEl = document.getElementById("success");
-      const failedEl = document.getElementById("failed");
-
-      // Connexions selon le flowchart
-      if (introEl && identityChoiceEl) instance.connect({ 
-        source: introEl, 
-        target: identityChoiceEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "→ Début",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-1",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (identityChoiceEl && idCollectionEl) instance.connect({ 
-        source: identityChoiceEl, 
-        target: idCollectionEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "CNI/Permis/Électorale",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-2",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (identityChoiceEl && passportCollectionEl) instance.connect({ 
-        source: identityChoiceEl, 
-        target: passportCollectionEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "Passeport",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-3",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (idCollectionEl && imageReviewEl) instance.connect({ 
-        source: idCollectionEl, 
-        target: imageReviewEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "→ Document capturé",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-4",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (passportCollectionEl && imageReviewEl) instance.connect({ 
-        source: passportCollectionEl, 
-        target: imageReviewEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "→ Passeport capturé",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-5",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (imageReviewEl && selfieCaptureEl) instance.connect({ 
-        source: imageReviewEl, 
-        target: selfieCaptureEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "Confirmé",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-6",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (selfieCaptureEl && selfieReviewEl) instance.connect({ 
-        source: selfieCaptureEl, 
-        target: selfieReviewEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "→ Selfie capturé",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-7",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (selfieReviewEl && identityVerificationEl) instance.connect({ 
-        source: selfieReviewEl, 
-        target: identityVerificationEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#4A90E2", strokeWidth: 2 },
-        endpointStyle: { fill: "#4A90E2", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "Confirmé",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-8",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (identityVerificationEl && successEl) instance.connect({ 
-        source: identityVerificationEl, 
-        target: successEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#22C55E", strokeWidth: 2 },
-        endpointStyle: { fill: "#22C55E", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "OK",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-9",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-      
-      if (identityVerificationEl && failedEl) instance.connect({ 
-        source: identityVerificationEl, 
-        target: failedEl,
-        anchors: ["Right", "Left"],
-        paintStyle: { stroke: "#EF4444", strokeWidth: 2 },
-        endpointStyle: { fill: "#EF4444", radius: 4 },
-        overlays: [
-          {
-            type: "Label",
-            options: { 
-              label: "KO",
-              cssClass: "connection-label",
-              location: 0.5,
-              id: "label-10",
-              labelOffset: { x: 0, y: -30 }
-            }
-          }
-        ]
-      });
-    }, 100);
+      createAllConnections();
+    }, 500);
 
     // Initialiser les champs pour les blocs de collecte
     const idCollectionFields: FieldDefinition[] = [
@@ -680,6 +483,218 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     return workflowData;
   };
 
+  // Fonction pour rafraîchir les connexions
+  const refreshConnections = () => {
+    if (jsPlumbInstanceRef.current) {
+      jsPlumbInstanceRef.current.repaintEverything();
+    }
+  };
+
+  // Fonction de test pour créer une connexion simple
+  const testConnection = () => {
+    if (!jsPlumbInstanceRef.current) {
+      console.error('jsPlumb instance not ready');
+      return;
+    }
+    
+    const introEl = document.getElementById("intro");
+    const identityChoiceEl = document.getElementById("identity-choice");
+    
+    if (introEl && identityChoiceEl) {
+      console.log('Creating test connection...');
+      jsPlumbInstanceRef.current.connect({
+        source: introEl,
+        target: identityChoiceEl,
+        paintStyle: { stroke: "#FF0000", strokeWidth: 3 },
+        endpointStyle: { fill: "#FF0000", radius: 5 }
+      });
+      jsPlumbInstanceRef.current.repaintEverything();
+    } else {
+      console.error('Elements not found for test connection');
+    }
+  };
+
+  // Fonction pour créer toutes les connexions de manière robuste
+  const createAllConnections = () => {
+    if (!jsPlumbInstanceRef.current) {
+      console.error('jsPlumb instance not ready');
+      return;
+    }
+
+    const instance = jsPlumbInstanceRef.current;
+    console.log('Creating all connections...');
+
+    // Vérifier si des connexions existent déjà
+    const existingConnections = instance.getConnections();
+    const connectionCount = Object.keys(existingConnections).length;
+    if (connectionCount > 0) {
+      console.log(`Found ${connectionCount} existing connections, skipping creation`);
+      return;
+    }
+
+    // Attendre que tous les éléments soient prêts
+    const createConnections = () => {
+      const introEl = document.getElementById("intro");
+      const identityChoiceEl = document.getElementById("identity-choice");
+      const idCollectionEl = document.getElementById("id-collection");
+      const passportCollectionEl = document.getElementById("passport-collection");
+      const imageReviewEl = document.getElementById("image-review");
+      const selfieCaptureEl = document.getElementById("selfie-capture");
+      const selfieReviewEl = document.getElementById("selfie-review");
+      const identityVerificationEl = document.getElementById("identity-verification");
+      const successEl = document.getElementById("success");
+      const failedEl = document.getElementById("failed");
+
+      // Vérifier que tous les éléments existent
+      const allElements = [introEl, identityChoiceEl, idCollectionEl, passportCollectionEl, 
+                          imageReviewEl, selfieCaptureEl, selfieReviewEl, identityVerificationEl, 
+                          successEl, failedEl];
+      
+      const missingElements = allElements.filter(el => !el);
+      if (missingElements.length > 0) {
+        console.warn('Some elements are missing, retrying in 100ms...');
+        setTimeout(createConnections, 100);
+        return;
+      }
+
+      // Créer les connexions une par une
+      const connections = [
+        { source: introEl, target: identityChoiceEl, label: "→ Début" },
+        { source: identityChoiceEl, target: idCollectionEl, label: "CNI/Permis/Électorale" },
+        { source: identityChoiceEl, target: passportCollectionEl, label: "Passeport" },
+        { source: idCollectionEl, target: imageReviewEl, label: "→ Document capturé" },
+        { source: passportCollectionEl, target: imageReviewEl, label: "→ Passeport capturé" },
+        { source: imageReviewEl, target: selfieCaptureEl, label: "Confirmé" },
+        { source: selfieCaptureEl, target: selfieReviewEl, label: "→ Selfie capturé" },
+        { source: selfieReviewEl, target: identityVerificationEl, label: "Confirmé" },
+        { source: identityVerificationEl, target: successEl, label: "OK" },
+        { source: identityVerificationEl, target: failedEl, label: "KO" }
+      ];
+
+      connections.forEach((conn, index) => {
+        if (conn.source && conn.target) {
+          console.log(`Creating connection ${index + 1}: ${conn.source.id} -> ${conn.target.id}`);
+          instance.connect({
+            source: conn.source,
+            target: conn.target,
+            anchors: ["Right", "Left"],
+            paintStyle: { stroke: "#4A90E2", strokeWidth: 3 },
+            endpointStyle: { fill: "#4A90E2", radius: 5 },
+            connector: { type: "StateMachine", options: { curviness: 20 } },
+            overlays: [
+              {
+                type: "Label",
+                options: { 
+                  label: conn.label,
+                  cssClass: "connection-label",
+                  location: 0.5,
+                  id: `label-${index + 1}`,
+                  labelOffset: { x: 0, y: -30 }
+                }
+              }
+            ]
+          });
+        }
+      });
+
+      // Forcer le redraw final
+      setTimeout(() => {
+        instance.repaintEverything();
+        console.log('All connections created and repainted');
+      }, 100);
+    };
+
+    createConnections();
+  };
+
+  // Fonction pour forcer la création des connexions (même si elles existent)
+  const forceCreateConnections = () => {
+    if (!jsPlumbInstanceRef.current) {
+      console.error('jsPlumb instance not ready');
+      return;
+    }
+
+    const instance = jsPlumbInstanceRef.current;
+    console.log('Force creating all connections...');
+
+    // Supprimer toutes les connexions existantes
+    instance.deleteEveryConnection();
+
+    // Attendre que tous les éléments soient prêts
+    const createConnections = () => {
+      const introEl = document.getElementById("intro");
+      const identityChoiceEl = document.getElementById("identity-choice");
+      const idCollectionEl = document.getElementById("id-collection");
+      const passportCollectionEl = document.getElementById("passport-collection");
+      const imageReviewEl = document.getElementById("image-review");
+      const selfieCaptureEl = document.getElementById("selfie-capture");
+      const selfieReviewEl = document.getElementById("selfie-review");
+      const identityVerificationEl = document.getElementById("identity-verification");
+      const successEl = document.getElementById("success");
+      const failedEl = document.getElementById("failed");
+
+      // Vérifier que tous les éléments existent
+      const allElements = [introEl, identityChoiceEl, idCollectionEl, passportCollectionEl, 
+                          imageReviewEl, selfieCaptureEl, selfieReviewEl, identityVerificationEl, 
+                          successEl, failedEl];
+      
+      const missingElements = allElements.filter(el => !el);
+      if (missingElements.length > 0) {
+        console.warn('Some elements are missing, retrying in 100ms...');
+        setTimeout(createConnections, 100);
+        return;
+      }
+
+      // Créer les connexions une par une
+      const connections = [
+        { source: introEl, target: identityChoiceEl, label: "→ Début" },
+        { source: identityChoiceEl, target: idCollectionEl, label: "CNI/Permis/Électorale" },
+        { source: identityChoiceEl, target: passportCollectionEl, label: "Passeport" },
+        { source: idCollectionEl, target: imageReviewEl, label: "→ Document capturé" },
+        { source: passportCollectionEl, target: imageReviewEl, label: "→ Passeport capturé" },
+        { source: imageReviewEl, target: selfieCaptureEl, label: "Confirmé" },
+        { source: selfieCaptureEl, target: selfieReviewEl, label: "→ Selfie capturé" },
+        { source: selfieReviewEl, target: identityVerificationEl, label: "Confirmé" },
+        { source: identityVerificationEl, target: successEl, label: "OK" },
+        { source: identityVerificationEl, target: failedEl, label: "KO" }
+      ];
+
+      connections.forEach((conn, index) => {
+        if (conn.source && conn.target) {
+          console.log(`Creating connection ${index + 1}: ${conn.source.id} -> ${conn.target.id}`);
+          instance.connect({
+            source: conn.source,
+            target: conn.target,
+            anchors: ["Right", "Left"],
+            paintStyle: { stroke: "#4A90E2", strokeWidth: 3 },
+            endpointStyle: { fill: "#4A90E2", radius: 5 },
+            connector: { type: "StateMachine", options: { curviness: 20 } },
+            overlays: [
+              {
+                type: "Label",
+                options: { 
+                  label: conn.label,
+                  cssClass: "connection-label",
+                  location: 0.5,
+                  id: `label-${index + 1}`,
+                  labelOffset: { x: 0, y: -30 }
+                }
+              }
+            ]
+          });
+        }
+      });
+
+      // Forcer le redraw final
+      setTimeout(() => {
+        instance.repaintEverything();
+        console.log('All connections created and repainted');
+      }, 100);
+    };
+
+    createConnections();
+  };
+
   // Fonction pour réinitialiser le workflow (utile pour le débogage)
   const resetWorkflow = () => {
     clearExistingWorkflow();
@@ -689,10 +704,48 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({ onExportWorkflow
     }, 100);
   };
 
-  // Connecter la fonction d'export
+  // Connecter la fonction d'export et de debug
   useEffect(() => {
     (window as any).exportWorkflow = exportWorkflow;
+    (window as any).refreshConnections = refreshConnections;
+    (window as any).createIdentityWorkflow = createIdentityWorkflow;
+    (window as any).testConnection = testConnection;
+    (window as any).createAllConnections = createAllConnections;
+    (window as any).forceCreateConnections = forceCreateConnections;
   }, []);
+
+  // Rafraîchir les connexions après chaque mise à jour
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshConnections();
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, [blockFields]);
+
+  // Effet pour maintenir les connexions - DÉSACTIVÉ pour éviter la boucle infinie
+  // useEffect(() => {
+  //   if (jsPlumbInstanceRef.current) {
+  //     const instance = jsPlumbInstanceRef.current;
+      
+  //     // Écouter les changements de DOM pour recréer les connexions si nécessaire
+  //     const observer = new MutationObserver(() => {
+  //       const connections = instance.getConnections();
+  //       if (connections.length === 0) {
+  //         console.log('No connections found, recreating...');
+  //         setTimeout(() => {
+  //           createIdentityWorkflow();
+  //         }, 100);
+  //       }
+  //     });
+      
+  //     if (containerRef.current) {
+  //       observer.observe(containerRef.current, { childList: true, subtree: true });
+  //     }
+      
+  //     return () => observer.disconnect();
+  //   }
+  // }, [jsPlumbInstanceRef.current]);
 
   return (
     <>

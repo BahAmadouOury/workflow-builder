@@ -23,6 +23,15 @@ export const useJsPlumb = (containerRef: React.RefObject<HTMLDivElement | null>)
     instance.addEndpoint(el, { anchor: "Right", endpoint: "Dot", source: true });
     instance.addEndpoint(el, { anchor: "Left", endpoint: "Dot", target: true });
     instance.setDraggable(el, true);
+    
+    // Ajouter un listener pour rafraîchir les connexions lors du déplacement
+    instance.bind("drag", (info: any) => {
+      instance.repaint(info.el);
+    });
+    
+    instance.bind("dragstop", (info: any) => {
+      instance.repaintEverything();
+    });
   };
 
   return {
